@@ -13,7 +13,7 @@
  * writing app.js a little simpler to work with.
  */
 
-let Engine = (function(global) {
+let Engine = (function (global) {
     /* Predefine the variables we"ll be using within this scope,
      * create the canvas element, grab the 2D context for that canvas
      * set the canvas elements height/width and add it to the DOM.
@@ -65,9 +65,11 @@ let Engine = (function(global) {
      */
     function init() {
         reset();
-        for(let i = 0; i < 5; i++)
-        {
-            allEnemies.push(new Enemy);
+        let numberOfEnemies = 6;
+        for (let i = 0; i < numberOfEnemies; i++) {
+            // I use a different x position for every enemy to prevent
+            // them starting to move overlapped
+            allEnemies.push(new Enemy(i));
         }
         lastTime = Date.now();
         main();
@@ -84,7 +86,7 @@ let Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        // checkCollisions();
+        checkCollisions();
     }
 
     /* This is called by the update function and loops through all of the
@@ -95,12 +97,42 @@ let Engine = (function(global) {
      * render methods.
      */
     function updateEntities(dt) {
-        allEnemies.forEach(function(enemy) {
+        allEnemies.forEach(function (enemy) {
             enemy.update(dt);
+        });
+        crashes.forEach(function (crash) {
+            crash.update(dt);
         });
         player.update();
     }
 
+    function checkCollisions() {
+
+        for (let i = 0; i < allEnemies.length; i++) {
+            //check for collision with the player
+
+            if ((allEnemies[i].x + 101) /*101 is the image width*/ >= (Player.x) &&
+                (allEnemies[i].x + 101) <= (Player.x + 101)) {
+                allEnemies[i].playerCollision = true;
+            }
+            //check for collision with another enemy
+            for (let j = i + 1; j < allEnemies.length; j++)
+                if (allEnemies[i].y === allEnemies[j].y) //are they on the same track?
+                    if ((allEnemies[i].x + 101) /*101 is the image width*/ >= (allEnemies[j].x) &&
+                        (allEnemies[i].x) <= (allEnemies[j].x + 101)) {
+                        // enemyCollision is 100, then it will be draw 10 cicles
+
+                        allEnemies[i].velocity > allEnemies[j].velocity ? // also draw collision splash in front of the faster enemy
+                            allEnemies[i].enemyCollision = 5 : allEnemies[j].enemyCollision = 5;
+                        // change velocity of both enemies
+                        // the one behind slow down
+                        // the one in front accelerate
+                        let tV = allEnemies[i].velocity;
+                        allEnemies[i].velocity = allEnemies[j].velocity;
+                        allEnemies[j].velocity = tV;
+                    }
+        }
+    }
     /* This function initially draws the "game level", it will then call
      * the renderEntities function. Remember, this function is called every
      * game tick (or loop of the game engine) because that"s how games work -
@@ -112,19 +144,19 @@ let Engine = (function(global) {
          * for that particular row of the game level.
          */
         let rowImages = [
-                "images/water-block.png",   // Top row is water
-                "images/stone-block.png",   // Row 1 of 3 of stone
-                "images/stone-block.png",   // Row 2 of 3 of stone
-                "images/stone-block.png",   // Row 3 of 3 of stone
-                "images/grass-block.png",   // Row 1 of 2 of grass
-                "images/grass-block.png"    // Row 2 of 2 of grass
+                "images/water-block.png", // Top row is water
+                "images/stone-block.png", // Row 1 of 3 of stone
+                "images/stone-block.png", // Row 2 of 3 of stone
+                "images/stone-block.png", // Row 3 of 3 of stone
+                "images/grass-block.png", // Row 1 of 2 of grass
+                "images/grass-block.png" // Row 2 of 2 of grass
             ],
             numRows = 6,
             numCols = 10,
             row, col;
-        
+
         // Before drawing, clear existing canvas
-        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
 
         /* Loop through the number of rows and columns we"ve defined above
          * and, using the rowImages array, draw the correct image for that
@@ -154,10 +186,15 @@ let Engine = (function(global) {
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
          */
-        allEnemies.forEach(function(enemy) {
+        allEnemies.forEach(function (enemy) {
             enemy.render();
         });
 
+        /* if there are crashes to draw
+         */
+        crashes.forEach(function (crash) {
+            crash.render();
+        });
         player.render();
     }
 
@@ -184,13 +221,14 @@ let Engine = (function(global) {
         "images/char-pink-girl.png",
         "images/char-princess-girl.png",
         "images/gem-blue.png",
-        "images/gem-green.png",   
-        "images/gem-orange.png",  
-        "images/heart.png",  
-        "images/key.png",   
-        "images/rock.png",  
-        "images/selector.png", 
-        "images/star.png" 
+        "images/gem-green.png",
+        "images/gem-orange.png",
+        "images/heart.png",
+        "images/key.png",
+        "images/rock.png",
+        "images/selector.png",
+        "images/star.png",
+        "images/crash.png"
     ]);
     Resources.onReady(init);
 
