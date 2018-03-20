@@ -40,9 +40,12 @@ let Engine = (function (global) {
          * computer is) - hurray time!
          */
         let now = Date.now(),
-            dt = (now - lastTime) / 1000.0;
-
-        /* Call our update/render functions, pass along the time delta to
+            dt = now - lastTime;
+            
+        /*typically dt is 16 miliseconds, for a frame rate of 60frames/seconds
+         * but may change depending of... it doesn't matter on this purpose
+         * anyway this is the default value used to calculate our animation's speed 
+         * Call our update/render functions, pass along the time delta to
          * our update function since it may be used for smooth animation.
          */
         update(dt);
@@ -103,7 +106,7 @@ let Engine = (function (global) {
         crashes.forEach(function (crash) {
             crash.update(dt);
         });
-        player.update();
+        player.update(dt);
     }
 
     function checkCollisions() {
@@ -149,7 +152,7 @@ let Engine = (function (global) {
                 "images/stone-block.png", // Row 2 of 3 of stone
                 "images/stone-block.png", // Row 3 of 3 of stone
                 "images/grass-block.png", // Row 1 of 2 of grass
-                "images/grass-block.png" // Row 2 of 2 of grass
+                "images/grass-block.png"  // Row 2 of 2 of grass
             ],
             numRows = 6,
             numCols = 10,
@@ -174,7 +177,6 @@ let Engine = (function (global) {
                 ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
             }
         }
-
         renderEntities();
     }
 
@@ -195,6 +197,7 @@ let Engine = (function (global) {
         crashes.forEach(function (crash) {
             crash.render();
         });
+        
         player.render();
     }
 
@@ -228,6 +231,8 @@ let Engine = (function (global) {
         "images/rock.png",
         "images/selector.png",
         "images/star.png",
+        "images/blood.png",
+        "images/blue-blood.png",
         "images/crash.png"
     ]);
     Resources.onReady(init);

@@ -1,4 +1,5 @@
 // Enemies our player must avoid
+
 let Enemy = function (i) {
     // variables applied to each of our instances go here,
     // we"ve provided one for you to get started
@@ -10,6 +11,11 @@ let Enemy = function (i) {
     // horizontal position (X axe)
     this.x = 0;
     this.y = 142 + (Math.floor((Math.random() * 10)) % 3) * 83;
+
+    // velocity is a multiplier of dt
+    // I want enemies to get randomly one of 5 different speeds
+    //it will change every time is entering the canvas
+    this.velocity = Math.floor(Math.random() * 1000) + 5;;
 
     this.setOnTrack = function () {
         // there are 3 tracks for enemies, randomly choose one
@@ -38,28 +44,37 @@ let Enemy = function (i) {
             }
         }
         this.x = xPos - 10; // -10 to have a little gap between
+
+        // 3.36pixels/frame is the mean animation speed of an enemy
+        // but we will add some random variations for every enemy
+        this.velocity = 0.5 + Math.random();
+
     }
 
     this.index = i;
-
-    // velocity is a multiplier of dt
-    // I want enemies to get randomly one of 4 different speeds
-    this.velocity = Math.floor(Math.random() * 1000);
 
     // collision variables is used by the checkCollision function
     this.playerCollision = false;
     this.enemyCollision = 0;
 };
 
-// Update the enemy"s position, required method for game
-// Parameter: dt, a time delta between ticks
-//---------------------------------------------------
+//------------------------------------------------------------------
 Enemy.prototype.update = function (dt) {
-    //---------------------------------------------------
+    //------------------------------------------------------------------
+    // Update the enemy"s position, required method for game
+    // Parameter: dt, a time delta between ticks
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
-    this.x += this.velocity * dt;
+    // --------
+    // I think the proper mean-speed of an enemy would be 303px/sec (or 3 columns/sec.)
+    // or 5.05px/dt or 0.316px/milisec.
+    // knowing this fraction, whenever the denominator <dt> is changing, we have to change the numerator
+    // in order to preserve the same value = speed of animation. On this purpose, we'll use the rule of three:
+    // 0.316=x/dt --> x=0.316*dt; if dt is increasing (slow processor speed for whatever reason) then also x increase 
+    // then x also increase, x being the number of pixels an enemy is moving in a single frame animation
+
+    this.x += this.velocity * 0.316 * dt;
 
     // check if this enemy is at the end of the track
     // if yes, the set the x position at the start
@@ -67,8 +82,11 @@ Enemy.prototype.update = function (dt) {
         this.setOnTrack();
     }
 };
-// Draw the enemy on the screen, required method for game
+
+//--------------------------------------------------------------
 Enemy.prototype.render = function () {
+    //--------------------------------------------------------------
+    // Draw the enemy on the screen, required method for game
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     if (this.enemyCollision > 0) {
         ctx.drawImage(Resources.get("images/crash.png"), this.x + 70, this.y, 60, 60);
@@ -93,30 +111,81 @@ let Player = function (char) {
     this.x = 5 * 101;
     //vertical position (Y axe)
     this.y = 4 * 92;
+    this.lastDt = 0; // hold the last dt 
+
     this.collision = false;
-    this.handleInput = function () {};
+
+    this.handleInput = function (key) {
+
+        switch (key) {
+            case (37):
+                {
+                    if (this.x > 0) // hold the player inside the canvas
+                        player.x -= 101;// jump to the left column
+                    break;
+                }
+            case (38):
+                {
+                    if (this.y > 0) // hold the player inside the canvas
+                        player.y -= 83;// jump to the upper row
+                    break;
+                }
+            case (39):
+                {
+                    if (this.x < 1010) // hold the player inside the canvas
+                        player.x += 101;// jump to the right column
+                    break;
+                }
+            case (40):
+                {
+                    if (this.y < 606) // hold the player inside the canvas
+                        player.y += 83;// jump to the bottom row
+                    break;
+                }
+            default:
+                ;
+        }
+    }
 };
 
 
-Player.prototype.update = function (dt) {};
+//--------------------------------------------------------------
+Player.prototype.update = function (dt) {
+    //--------------------------------------------------------------
+};
 
+//--------------------------------------------------------------
 Player.prototype.render = function () {
+    //--------------------------------------------------------------
+
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-
-
 let allEnemies = [],
     crashes = [],
-    player = new Player("boy");
-// This listens for key presses and sends the keys to your
-// Player.handleInput() method. You don"t need to modify this.
-document.addEventListener("keyup", function (e) {
+    player = new Player();
+
+
+//--------------------------------------------------------------
+document.addEventListener(/*"keyup"*/ "keydown", function (e) {
+    //----------------------------------------------------------
+    // keydown works better than keyup
+    // This listens for key presses and sends the keys to your
+    // Player.handleInput() method. You don"t need to modify this.
+    /*
     let allowedKeys = {
         37: "left",
         38: "up",
         39: "right",
         40: "down"
-    };
-    player.handleInput(allowedKeys[e.keyCode]);
+    };*/
+
+    player.handleInput(e.keyCode);
 });
+
+//--------------------------------------------------------------
+Player.prototype.handleInput = function (key) {
+    //--------------------------------------------------------------
+
+    console.log(key);
+}
