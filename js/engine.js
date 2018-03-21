@@ -24,6 +24,22 @@ let Engine = (function (global) {
         ctx = canvas.getContext("2d"),
         lastTime;
 
+    //create sounds objects to be played after some events
+    let soundFileNames = ["sounds/ay-caramba.wav",
+            "sounds/bug-crash.wav",
+            "sounds/kiss.wav",
+            "sounds/magic.wav",
+            "sounds/swipe.wav",
+            "sounds/telekinesis.wav",
+            "sounds/vomit.wav"
+        ],
+
+        Sounds = [];
+
+    soundFileNames.forEach(function (file) {
+        Sounds.push(new Audio(file))
+    });
+
 
     canvas.width = 1010;
     canvas.height = 606;
@@ -32,6 +48,7 @@ let Engine = (function (global) {
     /* This function serves as the kickoff point for the game loop itself
      * and handles properly calling the update and render methods.
      */
+    //----------------------------------------------------------------
     function main() {
         /* Get our time delta information which is required if your game
          * requires smooth animation. Because everyone"s computer processes
@@ -41,7 +58,7 @@ let Engine = (function (global) {
          */
         let now = Date.now(),
             dt = now - lastTime;
-            
+
         /*typically dt is 16 miliseconds, for a frame rate of 60frames/seconds
          * but may change depending of... it doesn't matter on this purpose
          * anyway this is the default value used to calculate our animation's speed 
@@ -66,18 +83,21 @@ let Engine = (function (global) {
      * particularly setting the lastTime variable that is required for the
      * game loop.
      */
+    //----------------------------------------------------------------
     function init() {
         reset();
         let numberOfEnemies = 6;
         for (let i = 0; i < numberOfEnemies; i++) {
             // I use a different x position for every enemy to prevent
             // them starting to move overlapped
-            allEnemies.push(new Enemy(i));
+            let enemy = new Enemy(i);
+            enemy.randomRow();
+            allEnemies.push(enemy);
         }
         lastTime = Date.now();
         main();
     }
-
+    //----------------------------------------------------------------
     /* This function is called by main (our game loop) and itself calls all
      * of the functions which may need to update entity"s data. Based on how
      * you implement your collision detection (when two entities occupy the
@@ -87,6 +107,7 @@ let Engine = (function (global) {
      * functionality this way (you could just implement collision detection
      * on the entities themselves within your app.js file).
      */
+    //----------------------------------------------------------------
     function update(dt) {
         updateEntities(dt);
         checkCollisions();
@@ -99,6 +120,7 @@ let Engine = (function (global) {
      * the data/properties related to the object. Do your drawing in your
      * render methods.
      */
+    //----------------------------------------------------------------
     function updateEntities(dt) {
         allEnemies.forEach(function (enemy) {
             enemy.update(dt);
@@ -108,40 +130,34 @@ let Engine = (function (global) {
         });
         player.update(dt);
     }
-
+    //----------------------------------------------------------------
     function checkCollisions() {
 
         for (let i = 0; i < allEnemies.length; i++) {
             //check for collision with the player
+            if (player.checkCollision(allEnemies[i]))
+                Sounds[3].play();
 
-            if ((allEnemies[i].x + 101) /*101 is the image width*/ >= (Player.x) &&
-                (allEnemies[i].x + 101) <= (Player.x + 101)) {
-                allEnemies[i].playerCollision = true;
-            }
             //check for collision with another enemy
             for (let j = i + 1; j < allEnemies.length; j++)
-                if (allEnemies[i].y === allEnemies[j].y) //are they on the same track?
-                    if ((allEnemies[i].x + 101) /*101 is the image width*/ >= (allEnemies[j].x) &&
-                        (allEnemies[i].x) <= (allEnemies[j].x + 101)) {
-                        // enemyCollision is 100, then it will be draw 10 cicles
-
-                        allEnemies[i].velocity > allEnemies[j].velocity ? // also draw collision splash in front of the faster enemy
-                            allEnemies[i].enemyCollision = 5 : allEnemies[j].enemyCollision = 5;
-                        // change velocity of both enemies
-                        // the one behind slow down
-                        // the one in front accelerate
-                        let tV = allEnemies[i].velocity;
-                        allEnemies[i].velocity = allEnemies[j].velocity;
-                        allEnemies[j].velocity = tV;
-                    }
+                if (allEnemies[i].checkCollision(allEnemies[j])) {
+                    // if a collison was found play the sound
+                    // but only if the enemy is visible on canvas surface
+                    //(not if just started to move on the hidden left area)
+                    if (allEnemies[i].x > 0)
+                        Sounds[1].play();
+                }
         }
     }
+
+
     /* This function initially draws the "game level", it will then call
      * the renderEntities function. Remember, this function is called every
      * game tick (or loop of the game engine) because that"s how games work -
      * they are flipbooks creating the illusion of animation but in reality
      * they are just drawing the entire screen over and over.
      */
+    //----------------------------------------------------------------
     function render() {
         /* This array holds the relative URL to the image used
          * for that particular row of the game level.
@@ -152,7 +168,7 @@ let Engine = (function (global) {
                 "images/stone-block.png", // Row 2 of 3 of stone
                 "images/stone-block.png", // Row 3 of 3 of stone
                 "images/grass-block.png", // Row 1 of 2 of grass
-                "images/grass-block.png"  // Row 2 of 2 of grass
+                "images/grass-block.png" // Row 2 of 2 of grass
             ],
             numRows = 6,
             numCols = 10,
@@ -184,6 +200,7 @@ let Engine = (function (global) {
      * tick. Its purpose is to then call the render functions you have defined
      * on your enemy and player entities within app.js
      */
+    //----------------------------------------------------------------
     function renderEntities() {
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
@@ -192,19 +209,14 @@ let Engine = (function (global) {
             enemy.render();
         });
 
-        /* if there are crashes to draw
-         */
-        crashes.forEach(function (crash) {
-            crash.render();
-        });
-        
         player.render();
     }
-
+  
     /* This function does nothing but it could have been a good place to
      * handle game reset states - maybe a new game menu or a game over screen
      * those sorts of things. It"s only called once by the init() method.
      */
+    //----------------------------------------------------------------
     function reset() {
         // noop
     }
