@@ -1,3 +1,8 @@
 body {
     text-align: center;
+    background-color: rgb(128, 128, 128);
+}
+canvas{
+    background-color: rgb(66, 66, 66);
+    padding:10px;
 }

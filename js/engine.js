@@ -24,24 +24,7 @@ let Engine = (function (global) {
         ctx = canvas.getContext("2d"),
         lastTime;
 
-    //create sounds objects to be played after some events
-    let soundFileNames = ["sounds/ay-caramba.wav",
-            "sounds/bug-crash.wav",
-            "sounds/kiss.wav",
-            "sounds/magic.wav",
-            "sounds/swipe.wav",
-            "sounds/telekinesis.wav",
-            "sounds/vomit.wav"
-        ],
-
-        Sounds = [];
-
-    soundFileNames.forEach(function (file) {
-        Sounds.push(new Audio(file))
-    });
-
-
-    canvas.width = 1010;
+    canvas.width = 909;
     canvas.height = 606;
     doc.body.appendChild(canvas);
 
@@ -59,15 +42,15 @@ let Engine = (function (global) {
         let now = Date.now(),
             dt = now - lastTime;
 
-        /*typically dt is 16 miliseconds, for a frame rate of 60frames/seconds
-         * but may change depending of... it doesn't matter on this purpose
+        /*typically dt is 16 miliseconds, for a frame rate of 60 frames/seconds
+         * but may change depending of... it doesn't matter for this purpose
          * anyway this is the default value used to calculate our animation's speed 
          * Call our update/render functions, pass along the time delta to
          * our update function since it may be used for smooth animation.
          */
         update(dt);
         render();
-
+  
         /* Set our lastTime variable which is used to determine the time delta
          * for the next time this function is called.
          */
@@ -86,14 +69,6 @@ let Engine = (function (global) {
     //----------------------------------------------------------------
     function init() {
         reset();
-        let numberOfEnemies = 6;
-        for (let i = 0; i < numberOfEnemies; i++) {
-            // I use a different x position for every enemy to prevent
-            // them starting to move overlapped
-            let enemy = new Enemy(i);
-            enemy.randomRow();
-            allEnemies.push(enemy);
-        }
         lastTime = Date.now();
         main();
     }
@@ -109,7 +84,7 @@ let Engine = (function (global) {
      */
     //----------------------------------------------------------------
     function update(dt) {
-        updateEntities(dt);
+        updateEntities(dt);WebKitCSSMatrix
         checkCollisions();
     }
 
@@ -125,31 +100,19 @@ let Engine = (function (global) {
         allEnemies.forEach(function (enemy) {
             enemy.update(dt);
         });
-        crashes.forEach(function (crash) {
-            crash.update(dt);
-        });
-        player.update(dt);
+        player.update();
     }
     //----------------------------------------------------------------
     function checkCollisions() {
-
         for (let i = 0; i < allEnemies.length; i++) {
             //check for collision with the player
-            if (player.checkCollision(allEnemies[i]))
-                Sounds[3].play();
+            player.checkCollision(allEnemies[i]);
 
             //check for collision with another enemy
             for (let j = i + 1; j < allEnemies.length; j++)
-                if (allEnemies[i].checkCollision(allEnemies[j])) {
-                    // if a collison was found play the sound
-                    // but only if the enemy is visible on canvas surface
-                    //(not if just started to move on the hidden left area)
-                    if (allEnemies[i].x > 0)
-                        Sounds[1].play();
-                }
+                allEnemies[i].checkCollision(allEnemies[j]);
         }
     }
-
 
     /* This function initially draws the "game level", it will then call
      * the renderEntities function. Remember, this function is called every
@@ -211,7 +174,7 @@ let Engine = (function (global) {
 
         player.render();
     }
-  
+
     /* This function does nothing but it could have been a good place to
      * handle game reset states - maybe a new game menu or a game over screen
      * those sorts of things. It"s only called once by the init() method.
