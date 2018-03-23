@@ -1,14 +1,78 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
-    <title>Effective JavaScript: Frogger</title>
+    <title>Arcade Game mMster</title>
+    <link href="https://fonts.googleapis.com/css?family=Aladin|Fredericka+the+Great" rel="stylesheet">
+    <link rel="stylesheet prefetch" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <script src="js/sweetalert2.js"></script>
 </head>
+
 <body>
+
+    <div id="container">
+        <span class="title"> ARCADE GAME MASTER</span>
+        <div id="score-panel">
+
+            <div class="item-group">SETTINGS</div>
+            <ul class="settings">
+                <li id="player" class="settings-item">
+                    <img src="images/char-boy.png" alt="Player image">
+                    <span id="player-name" class="item-value">player</span>
+                </li>
+                <li id="sounds" class="settings-item">
+                    <img src="images/sounds-on.png" alt="Sounds on icon">
+                    <span class="item-value">sounds on</span>
+                </li>
+            </ul>
+
+            <div class="item-group">STATISTICS</div>
+            <ul>
+                <li class="score-item">
+                    <img src="images/heart.png" alt="Lives left">
+                    <span id="lives" class="item-value">5 lives</span>
+                </li>
+                <li class="score-item">
+                    <img src="images/gem-blue.png" alt="Valuable gem">
+                    <span id="gem-blue" class="item-value">0x100</span>
+                </li>
+                <li class="score-item">
+                    <img src="images/gem-green.png" alt="Valuable gem">
+                    <span id="gem-green" class="item-value">0x200</span>
+                </li>
+                <li class="score-item">
+                    <img src="images/gem-orange.png" alt="Valuable gem">
+                    <span id="gem-orange" class="item-value">0x300</span>
+                </li>
+                <li class="score-item">
+                    <img src="images/key.png" alt="Key">
+                    <span id="key" class="item-value">0x400</span>
+                </li>
+                <li class="score-item">
+                    <img src="images/star.png" alt="Star">
+                    <span id="star" class="item-value">0x500</span>
+                </li>
+            </ul>
+            <div class="item-group">SCORE</div>
+            <ul>
+                <li id="score" class="score-item">
+                    <span id="points" class="item-value">0 points</span>
+                </li>
+            </ul>
+            </ul>
+        </div>
+    </div>
+
     <script src="js/resources.js"></script>
     <script src="js/app.js"></script>
     <script src="js/engine.js"></script>
+    <footer>
+        Project developed as a part of Udacity's
+        <strong>Front-End Web Developer Nanodegree Program</strong>.
+    </footer>
 </body>
 <div class="class"></div>
+
 </html>

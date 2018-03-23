@@ -1,53 +1,59 @@
 // Enemies our player must avoid
 
+//**********************************************************
 let Enemy = function (i) {
+    //**********************************************************
     // variables applied to each of our instances go here,
     // we"ve provided one for you to get started
+    //--------------------------------------------------------------
+    this.start = function () {
+        // The image/sprite for our enemies, this uses
+        // a helper we"ve provided to easily load images
+        this.sprite = "images/enemy-bug.png";
 
-    // The image/sprite for our enemies, this uses
-    // a helper we"ve provided to easily load images
-    this.sprite = "images/enemy-bug.png";
+        // horizontal position (x axe)
+        this.x = 707;
+        // vertical position (y axe)
+        this.y = 0;
+        this.xIncrement = 0;
 
-    // horizontal position (X axe)
-    this.x = 0;
-    this.y = 0;
-    this.xIncrement = 0;
+        // velocity is a multiplier of dt
+        // I want enemies to get randomly one of 5 different speeds
+        //it will change every time is entering the canvas
+        this.velocity = 0.6 + Math.random();
+        this.velocityKeeper = this.velocity; // need to remember actual velocity before being stopped
+        this.id = i; // used as an identifier of this object
 
-    // velocity is a multiplier of dt
-    // I want enemies to get randomly one of 5 different speeds
-    //it will change every time is entering the canvas
-    this.velocity = Math.floor(Math.random() * 1000) + 5;
-    this.velocityKeeper = this.velocity; // need to remember actual velocity before being stopped
-    this.id = i; // used as an identifier of this object
-
-    // collision variables is used by the checkCollision function
-    this.drawCollision = 0; //number of frames a collision splash have to be draw after it was triggered
-    this.stayTime = 0; //when is greater than 0, this enemy stop moving
-
+        // collision variables is used by the checkCollision function
+        this.drawCollision = 0; //number of frames a collision splash have to be draw after it was triggered
+        this.stayTime = 0; //when is greater than 0, this enemy stop moving
+    }
     //--------------------------------------------------------------
     this.right = function () {
-
         return this.x + 99;
     }
+
     //--------------------------------------------------------------
     this.nextRight = function () {
         return this.x + 99 + this.xIncrement;
     }
+
     //--------------------------------------------------------------
     this.left = function () {
         return this.x + 1;
     }
+
     //--------------------------------------------------------------
     this.randomRow = function () {
         // there are 3 rows for enemies, randomly choose one
         // a row is 83px height
         // the starting point for Y coordinate is rigth bellow the water
-        this.row = Math.floor((Math.random() * 10)) % 3 + 1;
-        this.y = 142 + (this.row - 1) * 83;
+        this.row = Math.floor((Math.random() * 1000)) % 3 + 1;
+        this.y = 91 + (this.row - 1) * 83;
     }
     //--------------------------------------------------------------
     this.restartMovingFromLeft = function () {
-
+        //--------------------------------------------------------------
         this.randomRow();
         // there we've got a row for this enemy
         // next, we have to set its x position
@@ -73,7 +79,7 @@ let Enemy = function (i) {
 
         // 3.36pixels/frame is the mean animation speed of an enemy
         // but we will add some random variations for every enemy
-        this.velocity = 0.5 + Math.random();
+        this.velocity = 0.6 + Math.random();
         this.velocityKeeper = this.velocity;
     }
     //-----------------------------------------
@@ -85,7 +91,7 @@ let Enemy = function (i) {
 
 //------------------------------------------------------------------
 Enemy.prototype.update = function (dt = 16 /*default value*/ ) {
-
+    //--------------------------------------------------------------
     // Update the enemy"s position, required method for game
     // Parameter: dt, a time delta between ticks
     // You should multiply any movement by the dt parameter
@@ -117,18 +123,19 @@ Enemy.prototype.update = function (dt = 16 /*default value*/ ) {
 
 //--------------------------------------------------------------
 Enemy.prototype.render = function () {
-
+    //--------------------------------------------------------------
     // Draw the enemy on the screen, required method for game
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     if (this.drawCollision > 0) {
 
-        ctx.drawImage(Resources.get("images/crash.png"), this.x + 70, this.y, 60, 60);
+        ctx.drawImage(Resources.get("images/crash.png"), this.x + 80, this.y + 10);
         this.drawCollision--; //decrease the number of frames left to be draw for collision splash
     }
 };
 
 //--------------------------------------------------------------
 Enemy.prototype.checkCollision = function (enemy) {
+    //--------------------------------------------------------------
     //check if enemy as parameter collided with this
     //if yes, change some stuffs here
     if (this.row === enemy.row)
@@ -136,49 +143,58 @@ Enemy.prototype.checkCollision = function (enemy) {
     //and if this enemy wasn't previously stopped behind the one in front
     {
         //see which one is moving left
-        let left = null,
-            right = null;
+        let a = null, //it will be the enemy coming faster from behind
+            b = null; // it will be enemy in front, slower
         if (this.velocity > enemy.velocity) {
-            left = this;
-            right = enemy
+            a = this;
+            b = enemy
         } else if (this.velocity > enemy.velocity) {
-            left = enemy;
-            right = this;
+            a = enemy;
+            b = this;
         } else //both velocity are 0
         {
             if (this.left < enemy.left()) {
-                left = this;
-                right = enemy;
+                a = this;
+                b = enemy;
             } else {
-                right = this;
-                left = enemy;
+                b = this;
+                a = enemy;
             }
         }
         //          return;
 
-        if ((left.nextRight() - right.left(0)) >= 0 && left.left() < right.right()) {
+        if ((a.nextRight() - b.left(0)) >= 0 && a.left() < b.right()) {
             //here is a collision
             let stateChanged = true;
 
-            if (right.stayTime > 0) { //the enemy beyond was stoped
-                if (left.stayTime > 0) // both enemy are stopped, nothing to change
+            if (b.stayTime > 0) { //the enemy beyond was stoped
+                if (a.stayTime > 0) // both enemy are stopped, nothing to change
                     stateChanged = false;
-                left.stop(22); //stop this too (if it was moving) or keep it stopped if it was stopped
+                a.stop(22); //stop this too (if it was moving) or keep it stopped if it was stopped
             }
 
             if (stateChanged) {
-                left.drawCollision = 5;
+                a.drawCollision = 5;
                 // change velocity of both enemies
                 // the one behind slow down
                 // the one in front accelerate
-                let tV = left.velocity;
-                left.velocity = right.velocity;
-                right.velocity = tV;
-                Sounds[1].play();
+                let tV = a.velocity;
+                a.velocity = b.velocity;
+                b.velocity = tV;
+                if (a.right() > 0 && b.left() < 707) //play sounds only if is inside the canvas
+                    if (bSounds)
+                        Sounds[0].play();
             }
         }
     }
 };
+//--------------------------------------------------------------
+Enemy.prototype.start = function ()
+//--------------------------------------------------------------
+{
+    // horizontal position (x axe)
+    this.init();
+}
 
 // Now write your own player class
 // This class requires an update(), render() and
@@ -188,141 +204,347 @@ Enemy.prototype.checkCollision = function (enemy) {
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 
-
+//**********************************************************
 let Player = function (char) {
-
-    //TODO: set the character image based on the 'char' 
-    this.sprite = "images/char-boy.png";
-    //horizontal position (X axe)
-    this.x = 4 * 101;
-    //vertical position (Y axe)
-    this.y = 5 * 83 + 51;
-    this.row = 5; //
-    this.teleFrames = 0; //when is greater than zero, teleporting animation is on for next 'teleFrames' frames
+    //*********************************************************
     //--------------------------------------------------------------
-    this.update = function () {
-        if (this.teleFrames > 0) // started from 20, inside startTeleporting function,
-        {
-            this.teleFrames--; // and trigered after a collision with enemy
-
-            if (this.teleFrames === 40) { // at the middle of teleporting state
-                this.x = 4 * 101; // is where the player jump to the initial position
-                this.row = 5;
-                this.y = this.row * 83 + 51;
-            }
-        }
+    this.init = function () {
+        this.sprite = "images/char-boy.png";
+        this.x = 3 * 101;
+        this.y = 5 * 83;
+        this.row = 5; //
+        this.teleFrames = 0;
+        this.lives = 2;
+        this.points = 0;
     };
-
-    //--------------------------------------------------------------
-    this.render = function () {
-        if (this.teleFrames > 0) {
-            ctx.globalAlpha = Math.abs(40 - this.teleFrames) / 10;
-            //player transparency increase for first 20 teleporting changes, and decrease for next 20
-            ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-            ctx.globalAlpha = 1;
-        } else
-            ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    };
-
-    //--------------------------------------------------------------
-    this.handleInput = function (key) {
-        if (this.teleFrames === 0) //lose input when is in teleporting state
-        {
-            switch (key) {
-                case (37): //left
-                    {
-                        if (this.x > 0) // hold the player inside the canvas
-                            this.x -= 101; // jump to the left column
-                        break;
-                    }
-                case (38): //up
-                    {
-                        if (this.row > 0) // hold the player under the upper edge of the canvas
-                        {
-                            this.row--;
-                            this.y = this.row * 83 + 51; // jump to the upper row
-                        }
-                        break;
-                    }
-                case (39): //right
-                    {
-                        if (this.x < 1010) // hold the player inside the canvas
-                            this.x += 101; // jump to the right column
-                        break;
-                    }
-                case (40): //down
-                    {
-                        if (this.row < 5) // hold the player over the bottom edge of the canvas
-                        {
-                            this.row++; // jump to the bottom row
-                            this.y = this.row * 83 + 51; // jump to the bottom row
-                        }
-                        break;
-                    }
-                default:
-            }
-        }
+    this.setImage = function (image) {
+        this.sprite = image;
     }
-    //--------------------------------------------------------------
-    this.left = function () {
-        return this.x + 17;
-    }
-    //--------------------------------------------------------------
-    this.right = function () {
-        return this.x + 84;
-    }
-    //--------------------------------------------------------------
-    this.startTeleporting = function (frames) {
-        this.teleFrames = frames;
-        //first half of 'frames' to get transparent on the same place
-        // next half of 'frames' to appear on the starting position
-
-    }
-    //--------------------------------------------------------------
-    this.checkCollision = function (enemy) {
-
-        if (enemy.row === this.row) //if they are on the same row
-        {
-            if ((enemy.nextRight() - this.left()) >= 0 && enemy.left() < this.left()) {
-                this.collision = true;
-                if (enemy.stayTime === 0) {
-                    Sounds[2].play();
-                    enemy.stop(42);
-                    this.startTeleporting(80);
-                    Sounds[3].currentTime = 0;
-                    Sounds[3].play();
-                }
-            }
+//--------------------------------------------------------------
+this.update = function () {
+    if (this.teleFrames > 0) // started from 80 inside startTeleporting function,
+    { // and trigered after a collision with enemy
+        this.teleFrames -= 1;
+        // on the first 40 cycles of teleporting, player is in the same location
+        // and have it's transparency decreasing until he became completely invisible
+        // then the player move to the initial location and on the next 40 cicles 
+        // his opacity is increasing from 0 to 100%
+        if (this.teleFrames === 40) { // is at the middle of teleporting state?
+            this.x = 3 * 101; // player jump to the initial position
+            this.row = 5;
+            this.y = this.row * 83;
         }
     }
 };
 
+//--------------------------------------------------------------
+this.render = function () {
+    if (this.teleFrames > 0) {
+        ctx.globalAlpha = Math.abs(40 - this.teleFrames) / 40;
+        //player transparency increase for first 40 teleporting changes, and decrease for next 40
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
+        ctx.globalAlpha = 1;
+    } else
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
+};
+
+//--------------------------------------------------------------
+this.handleInput = function (key) {
+    if (this.teleFrames === 0) //lose input when is in teleporting state
+    {
+        switch (key) {
+            case (37): //left
+                {
+                    if (this.x > 0) // hold the player inside the canvas
+                        this.x -= 101; // jump to the left column
+                    break;
+                }
+            case (38): //up
+                {
+                    if (this.row > 0) // hold the player under the upper edge of the canvas
+                    {
+                        this.row--;
+                        this.y = this.row * 83; // jump to the upper row
+                    }
+                    break;
+                }
+            case (39): //right
+                {
+                    if (this.x < 606) // hold the player inside the canvas
+                        this.x += 101; // jump to the right column
+                    break;
+                }
+            case (40): //down
+                {
+                    if (this.row < 5) // hold the player over the bottom edge of the canvas
+                    {
+                        this.row++; // jump to the bottom row
+                        this.y = this.row * 83; // jump to the bottom row
+                    }
+                    break;
+                }
+            default:
+        }
+    }
+}
+//--------------------------------------------------------------
+this.left = function () {
+    return this.x + 17;
+}
+//--------------------------------------------------------------
+this.right = function () {
+    return this.x + 84;
+}
+//--------------------------------------------------------------
+this.top = function () {
+    return this.y + 17;
+}
+//--------------------------------------------------------------
+this.bottom = function () {
+    return this.y + 84;
+}
+//--------------------------------------------------------------
+this.startTeleporting = function (frames) {
+    this.teleFrames = frames;
+    //first half of 'frames' to get transparent on the same place
+    // next half of 'frames' to appear on the starting position
+}
+//--------------------------------------------------------------
+this.checkCollision = function (enemy) {
+
+    if (enemy.row === this.row) //if they are on the same row
+    {
+        if ((enemy.nextRight() - this.left()) >= 0 && enemy.left() < this.left()) {
+            if (enemy.stayTime === 0) {
+                enemy.stop(42);
+                this.startTeleporting(80);
+                if (bSounds) {
+                    Sounds[1].currentTime = 0;
+                    Sounds[1].play();
+                    this.lives -= 1;
+                    document.getElementById("lives").innerText = this.lives + " lives left";
+                    if (this.lives === 0)
+                        gameFinished();
+                }
+            }
+        }
+    }
+}
+};
+
+//**********************************************************
+let Items = function () {
+    //********************************************************** 
+    //---------------------------------------------------------------------
+    this.init = function () {
+        this.waiting = 0;
+        this.onRemoveFrames = 0;
+        this.putOnCanvas();
+    }
+    //---------------------------------------------------------------------
+    this.putOnCanvas = function () {
+        // this function chose random an image, next
+        //the row and column to display on canvas
+        // next, the display time;
+        // to gain points, the player is urged to collect the item during this time
+        this.setImage();
+        this.x = ((Math.floor(Math.random() * 1000)) % 7) * 101 + 25; // one of the 7 columns, 101px wide
+
+        // it is more difficult to reach this if it's on the  upper 2 of the 3 stoned rows
+        this.y = ((Math.floor(Math.random() * 1000)) % 3) * 83 + 15;
+        //chose display time randomly
+        this.displayTime = ((Math.floor(Math.random() * 1000) % 3) + 1) * 150; //frames or (1, 2, 3 or 4) * 10sec.
+    };
+    //---------------------------------------------------------------------
+    this.setImage = function () {
+        let img = [
+            "images/gem-blue.png",
+            "images/gem-green.png",
+            "images/gem-orange.png",
+            "images/key.png",
+            "images/star.png",
+        ];
+        let randomImage = ((Math.floor(Math.random() * 1000)) % 5);
+        this.sprite = img[randomImage];
+        this.value = (1 + randomImage) * 100;
+    };
+    //---------------------------------------------------------------------
+    this.setWaiting = function () {
+        //set this.waiting time randomly from 10 to 40 sec.
+        // on this time it will be not displayed on canvas
+        this.waiting = ((Math.floor(Math.random() * 1000)) % 4 + 1) * 150; //frames or (1, 2, 3 or 4) * 2.5sec.
+    };
+    //---------------------------------------------------------------------
+    this.left = function () {
+        return this.x;
+    };
+    //---------------------------------------------------------------------
+    this.right = function () {
+        return this.x + 50; // 50 is the image width of every collectible item
+    };
+
+    //---------------------------------------------------------------------
+    this.render = function () {
+        if (this.displayTime > 0) { // 
+            if (this.displayTime < 61) { // last second of displayTime
+                ctx.globalAlpha = 1 - ((60 - this.displayTime) / 60); // show fading 
+                ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+                ctx.globalAlpha = 1;
+            } else {
+                ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+            }
+        }
+    };
+
+    //---------------------------------------------------------------------
+    this.update = function () {
+        if (this.waiting > 0) //not showing yet
+        {
+            this.waiting -= 1;
+            if (this.waiting === 0) // waiting time is over, then
+                this.putOnCanvas(); // prepare and show on the canvas
+        }
+
+        if (this.displayTime > 0) // its'showing
+        {
+            this.displayTime -= 1; // decrease the counter of showing time       
+            if (this.displayTime === 0) // here display time is over
+                this.setWaiting(); // set another period to wait until display
+        }
+    };
+
+    //---------------------------------------------------------------------
+    this.removeFromCanvas = function () {
+        //called when the player collect this item
+        this.displayTime = 0;
+        this.setWaiting();
+
+    };
+    //--------------------------------------------------------------
+    this.checkCollision = function () {
+        // unlike the collision with an enemy, which can occurs with enemies coming only from left side
+        // collision with an item may happen on every of the four sides of the player
+        // so we have to check if the item center point is inside the player area
+
+        if (this.displayTime > 0) //check collision only if this gem is visible
+        {
+            let centerX = this.x + 25,
+                centerY = this.y + 25; // 25 is both the item  width and heigth
+
+            if (centerX > player.left() && centerX < player.right() && centerY > player.top() && centerY < player.bottom()) {
+                player.points += this.value;
+                this.removeFromCanvas();
+                this.updateScore()
+                if (bSounds)
+                    Sounds[3].play();
+            }
+        };
+    };
+    //---------------------------------------------------------------------
+    this.updateScore = function () {
+        //called after the player collect this item points in the score panel
+        let listItem, charItem;
+        switch (this.value) {
+            case (100):
+                {
+                    listItem = document.getElementById("gem-blue");
+                    break;
+                }
+            case (200):
+                {
+                    listItem = document.getElementById("gem-green");
+                    break;
+                }
+            case (300):
+                {
+                    listItem = document.getElementById("gem-orange");
+                    break;
+                }
+            case (400):
+                {
+                    listItem = document.getElementById("key");
+                    break;
+                }
+            case (500):
+                {
+                    listItem = document.getElementById("star");
+                    break;
+                }
+            default:
+                listItem = null;
+        }
+
+        if (listItem) {
+            charItem = listItem.innerText;
+            let pos = charItem.indexOf("x");
+            let previousGems = charItem.substring(0, pos);
+            let newString = (parseInt(previousGems, 10) + 1).toString() + charItem.substring(pos, charItem.length);
+            listItem.innerText = newString;
+        }
+        listItem = document.getElementById("points");
+        if (listItem)
+            listItem.innerText = player.points.toString() + " points";
+    };
+}
+
+//********************************************************************************
 
 let allEnemies = [],
-    player = new Player();
+    player = new Player(),
+    item = new Items();
 
-const numberOfEnemies = 6;
+
+const numberOfEnemies = 8;
 for (let i = 0; i < numberOfEnemies; i++) {
     // I use a different x position for every enemy to prevent
     // them starting to move overlapped
     let enemy = new Enemy(i);
-    enemy.randomRow();
     allEnemies.push(enemy);
 }
 //create sounds objects to be played after some events
-const soundFileNames = ["sounds/ay-caramba.wav",
-        "sounds/bug-crash.ogg",
-        "sounds/kiss.ogg",
-        "sounds/magic.ogg",
-        "sounds/swipe.ogg",
-        "sounds/telekinesis.ogg",
-    ],
+const soundFileNames = ["sounds/bug-crash.ogg",
+    "sounds/magic.ogg",
+    "sounds/swipe.ogg",
+    "sounds/telekinesis.ogg",
+];
 
-    Sounds = [];
+let Sounds = [];
 
 soundFileNames.forEach(function (file) {
     Sounds.push(new Audio(file));
 });
+
+let bSounds = true,
+    bPaused = false;
+
+//----------------------------------------------------------------
+function gameFinished() {
+    //--------------------------------------------------------------
+    swal({
+        type: "success",
+        title: "Nice game",
+        text: "Wanna play again?",
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Yes, hurry up!",
+        confirmButtonColor: "green",
+        cancelButtonColor: "red",
+    }).then((result) => {
+        if (result.value) {
+            swal(
+                "Good choice!",
+                "Let's proceed then.",
+                "success"
+            )
+        } else {
+            swal(
+                "Wise!",
+                "Now back to work",
+                "success"
+            )
+        }
+    })
+}
 //--------------------------------------------------------------
 document.addEventListener( /*"keyup"*/ "keydown", function (e) {
     //----------------------------------------------------------
@@ -338,4 +560,67 @@ document.addEventListener( /*"keyup"*/ "keydown", function (e) {
     };
 */
     player.handleInput(e.keyCode);
+});
+//--------------------------------------------------------------
+document.getElementById("player").addEventListener("click", function (e) {
+    //--------------------------------------------------------------
+    //sweetaler2: code from https://sweetalert2.github.io/
+
+    swal({
+        title: "Choose your player character",
+        input: "select",
+        inputOptions: {
+            "BOY": "Boy",
+            "CAT": "Cat Girl",
+            "HORN": "Horn Girl",
+            "PINK": "Pink Girl",
+            "PRINCESS": "Princess"
+        },
+        showCancelButton: true,
+        confirmButtonText: "Next",
+    }).then((result) => {
+        if (result.value) {
+            let strPath = "";
+            if (result.value === "BOY")
+                strPath = "images/char-boy.png";
+            else if (result.value === "CAT")
+                strPath = "images/char-cat-girl.png";
+            else if (result.value === "HORN")
+                strPath = "images/char-horn-girl.png";
+            else if (result.value === "PINK")
+                strPath = "images/char-pink-girl.png";
+            else if (result.value === "PRINCESS")
+                strPath = "images/char-princess-girl.png";
+            this.innerHTML =
+                "<img src=" + strPath + " alt='Player image'> <span class='item-value'>player</span>";
+                player.setImage(strPath);
+
+            swal({
+                title: "Choose your player name",
+                input: "text",
+                showCancelButton: true,
+                confirmButtonText: "Ok",
+            }).then((result) => {
+                if (result.value) { //the player name was chosen
+                    this.childNodes[2].innerText = result.value;
+                    swal({
+                        type: "success",
+                        title: "Cute!",
+                    })
+                }
+            })
+        }
+    })
+});
+
+//--------------------------------------------------------------
+document.getElementById("sounds").addEventListener("click", function (e) {
+    //--------------------------------------------------------------
+    bSounds = !bSounds; // switch play sounds and change consequently the sound icon
+
+    let strState;
+    bSounds ? strState = "on" : strState = "off";
+    document.getElementById("sounds").innerHTML =
+        "<img src='images/sounds-" + strState + ".png' alt='Sounds" + strState + " icon'><span class='item-value'>sounds " + strState + "</span>";
+
 });

@@ -1,8 +1,97 @@
 body {
     text-align: center;
-    background-color: rgb(128, 128, 128);
+    margin: auto;
+    width: 1130px;    
 }
-canvas{
-    background-color: rgb(66, 66, 66);
-    padding:10px;
+
+#container {
+    width: 100%;
+    display: inline-block;
+    background-image: url("../images/frame.png");
+    margin-top: 10px;
+    box-shadow: 15px 15px 20px rgba(61, 49, 43, 0.815);
+}
+
+canvas {
+    margin-left: 125px;
+    float: left;
+    margin-top: 16px;
+    margin-bottom: 90px;
+    box-sizing: curent-box;
+    box-shadow: 3px 3px 5px rgba(255, 255, 255, 0.746);
+}
+
+.title {
+    width: 100%;
+    display: inline-block;
+    font-family: "Fredericka the Great", cursive;
+    font-size: 36px;
+    margin-top: 35px;
+    color: rgb(104, 47, 0);
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.65)
+}
+
+#score-panel {
+    font-family: "Aladin", serif;
+    width: 250px;
+    height: 539px;
+    margin-top: 30px;
+    text-align: left;
+    color: rgba(49, 28, 0, 0.466);
+    text-shadow: 1px 1px 5px rgba(29, 29, 29, 0.603);
+    display: inline-block;
+}
+
+ul {
+    list-style: none;
+    padding-left: 15px;
+    font-weight: bold;
+}
+
+.settings {
+    cursor: pointer;
+}
+
+.score-item {
+    font-size: 20px;
+    height: 40x;
+    width: 100%;
+    vertical-align: center;
+}
+
+.item-group {
+    font-size: 24px;
+    text-decoration: underline;
+    margin-left:30px;
+}
+
+.item-value {
+    padding-left: 10px;
+}
+
+img {
+    width: 40px;
+    height: 40px;
+    vertical-align: middle;
+    padding: 3px;
+    filter: drop-shadow(3px 3px 5px #000000);
+}
+.settings-item
+{
+    font-size:24px;
+    text-overflow: ellipsis;
+}
+.score-item img
+{
+    width: 30px;
+    height: 30px; 
+}
+footer {
+    margin: auto;
+    margin-top: 40px;
+    color: rgba(112, 112, 112, 0.527);
+    width: 100%;
+    height: 30px;
+    text-align: center;
+    border-top: 1px solid #888;
 }

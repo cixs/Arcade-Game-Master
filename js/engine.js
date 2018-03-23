@@ -24,42 +24,46 @@ let Engine = (function (global) {
         ctx = canvas.getContext("2d"),
         lastTime;
 
-    canvas.width = 909;
-    canvas.height = 606;
-    doc.body.appendChild(canvas);
+    canvas.width = 707;
+    canvas.height = 535;
+    let container = doc.getElementById("container");
+    container.insertBefore(canvas, container.childNodes[2]);
+
 
     /* This function serves as the kickoff point for the game loop itself
      * and handles properly calling the update and render methods.
      */
     //----------------------------------------------------------------
     function main() {
-        /* Get our time delta information which is required if your game
-         * requires smooth animation. Because everyone"s computer processes
-         * instructions at different speeds we need a constant value that
-         * would be the same for everyone (regardless of how fast their
-         * computer is) - hurray time!
-         */
-        let now = Date.now(),
-            dt = now - lastTime;
+        {
+            /* Get our time delta information which is required if your game
+             * requires smooth animation. Because everyone"s computer processes
+             * instructions at different speeds we need a constant value that
+             * would be the same for everyone (regardless of how fast their
+             * computer is) - hurray time!
+             */
+            let now = Date.now(),
+                dt = now - lastTime;
 
-        /*typically dt is 16 miliseconds, for a frame rate of 60 frames/seconds
-         * but may change depending of... it doesn't matter for this purpose
-         * anyway this is the default value used to calculate our animation's speed 
-         * Call our update/render functions, pass along the time delta to
-         * our update function since it may be used for smooth animation.
-         */
-        update(dt);
-        render();
-  
-        /* Set our lastTime variable which is used to determine the time delta
-         * for the next time this function is called.
-         */
-        lastTime = now;
+            /*typically dt is 16 miliseconds, for a frame rate of 60 frames/seconds
+             * but may change depending of... it doesn't matter for this purpose
+             * anyway this is the default value used to calculate our animation's speed 
+             * Call our update/render functions, pass along the time delta to
+             * our update function since it may be used for smooth animation.
+             */
+            update(dt);
+            render();
 
-        /* Use the browser"s requestAnimationFrame function to call this
-         * function again as soon as the browser is able to draw another frame.
-         */
-        win.requestAnimationFrame(main);
+            /* Set our lastTime variable which is used to determine the time delta
+             * for the next time this function is called.
+             */
+            lastTime = now;
+
+            /* Use the browser"s requestAnimationFrame function to call this
+             * function again as soon as the browser is able to draw another frame.
+             */
+            win.requestAnimationFrame(main);
+        }
     }
 
     /* This function does some initial setup that should only occur once,
@@ -84,8 +88,10 @@ let Engine = (function (global) {
      */
     //----------------------------------------------------------------
     function update(dt) {
-        updateEntities(dt);WebKitCSSMatrix
-        checkCollisions();
+        if (player.lives > 0) {
+            updateEntities(dt);
+            checkCollisions();
+        }
     }
 
     /* This is called by the update function and loops through all of the
@@ -101,6 +107,7 @@ let Engine = (function (global) {
             enemy.update(dt);
         });
         player.update();
+        item.update();
     }
     //----------------------------------------------------------------
     function checkCollisions() {
@@ -112,6 +119,7 @@ let Engine = (function (global) {
             for (let j = i + 1; j < allEnemies.length; j++)
                 allEnemies[i].checkCollision(allEnemies[j]);
         }
+        item.checkCollision();
     }
 
     /* This function initially draws the "game level", it will then call
@@ -153,7 +161,7 @@ let Engine = (function (global) {
                  * so that we get the benefits of caching these images, since
                  * we"re using them over and over.
                  */
-                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83);
+                ctx.drawImage(Resources.get(rowImages[row]), col * 101, row * 83 - 51);
             }
         }
         renderEntities();
@@ -168,6 +176,7 @@ let Engine = (function (global) {
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
          */
+        item.render();
         allEnemies.forEach(function (enemy) {
             enemy.render();
         });
@@ -181,8 +190,14 @@ let Engine = (function (global) {
      */
     //----------------------------------------------------------------
     function reset() {
-        // noop
+        score = 0;
+        allEnemies.forEach(function (enemy) {
+            enemy.start();
+        });
+        player.init();
+        item.init();
     }
+
 
     /* Go ahead and load all of the images we know we"re going to need to
      * draw our game level. Then set init as the callback method, so that when
@@ -203,11 +218,7 @@ let Engine = (function (global) {
         "images/gem-orange.png",
         "images/heart.png",
         "images/key.png",
-        "images/rock.png",
-        "images/selector.png",
         "images/star.png",
-        "images/blood.png",
-        "images/blue-blood.png",
         "images/crash.png"
     ]);
     Resources.onReady(init);
