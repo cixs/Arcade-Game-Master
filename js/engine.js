@@ -190,12 +190,7 @@ let Engine = (function (global) {
      */
     //----------------------------------------------------------------
     function reset() {
-        score = 0;
-        allEnemies.forEach(function (enemy) {
-            enemy.start();
-        });
-        player.init();
-        item.init();
+        initGame();
     }
 
 
@@ -207,6 +202,7 @@ let Engine = (function (global) {
         "images/stone-block.png",
         "images/water-block.png",
         "images/grass-block.png",
+        "images/enemy-snail.png",
         "images/enemy-bug.png",
         "images/char-boy.png",
         "images/char-cat-girl.png",
@@ -216,9 +212,9 @@ let Engine = (function (global) {
         "images/gem-blue.png",
         "images/gem-green.png",
         "images/gem-orange.png",
-        "images/heart.png",
-        "images/key.png",
-        "images/star.png",
+        "images/he-heart.png",
+        "images/ke-key.png",
+        "images/st-star.png",
         "images/crash.png"
     ]);
     Resources.onReady(init);

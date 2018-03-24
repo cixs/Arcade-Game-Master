@@ -23,11 +23,27 @@ let Enemy = function (i) {
         this.velocity = 0.6 + Math.random();
         this.velocityKeeper = this.velocity; // need to remember actual velocity before being stopped
         this.id = i; // used as an identifier of this object
+        this.kindOf = "bug";
 
         // collision variables is used by the checkCollision function
         this.drawCollision = 0; //number of frames a collision splash have to be draw after it was triggered
         this.stayTime = 0; //when is greater than 0, this enemy stop moving
     }
+    //----------------------------------------------------------
+    this.setKindOf = function () {
+        // once in 16 appearances this enemy is a snail
+        let x = Math.floor((Math.random() * 1000)) % 24;
+        if ((x === 0 && this.kindOf === "snail") || (x > 0 && this.kindOf === "bug"))
+            return; //nothing to change
+        else {
+            x === 0 ? this.kindOf = "snail" : this.kindOf = "bug";
+            if (this.kindOf === "snail")
+                this.sprite = "images/enemy-snail.png";
+            else
+                this.sprite = "images/enemy-bug.png";
+        }
+    }
+
     //--------------------------------------------------------------
     this.right = function () {
         return this.x + 99;
@@ -49,11 +65,12 @@ let Enemy = function (i) {
         // a row is 83px height
         // the starting point for Y coordinate is rigth bellow the water
         this.row = Math.floor((Math.random() * 1000)) % 3 + 1;
-        this.y = 91 + (this.row - 1) * 83;
+        this.y = 85 + (this.row - 1) * 83;
     }
     //--------------------------------------------------------------
     this.restartMovingFromLeft = function () {
         //--------------------------------------------------------------
+        this.setKindOf();
         this.randomRow();
         // there we've got a row for this enemy
         // next, we have to set its x position
@@ -79,7 +96,16 @@ let Enemy = function (i) {
 
         // 3.36pixels/frame is the mean animation speed of an enemy
         // but we will add some random variations for every enemy
-        this.velocity = 0.6 + Math.random();
+        if (this.kindOf === "bug")
+            this.velocity = 0.5 + Math.random();
+        else {
+            this.velocity = 1.5;
+            if (bSounds)
+            {   Sounds[4].currentTime = 0;
+                Sounds[4].play();
+            }
+            setTimeout(1000);
+        }
         this.velocityKeeper = this.velocity;
     }
     //-----------------------------------------
@@ -175,16 +201,22 @@ Enemy.prototype.checkCollision = function (enemy) {
 
             if (stateChanged) {
                 a.drawCollision = 5;
-                // change velocity of both enemies
-                // the one behind slow down
-                // the one in front accelerate
-                let tV = a.velocity;
-                a.velocity = b.velocity;
-                b.velocity = tV;
-                if (a.right() > 0 && b.left() < 707) //play sounds only if is inside the canvas
-                    if (bSounds)
-                        Sounds[0].play();
+                if (a.kindOf === "bug") //if the faster enemy is a bug
+                {
+                    // change velocity of both enemies
+                    // the one behind slow down
+                    // the one in front accelerate
+                    let tV = a.velocity;
+                    a.velocity = b.velocity;
+                    b.velocity = tV;
+                } else {
+                    //does not exchange velocity, but the bug is pushed forward by the snail
+                    b.velocity = a.velocity;
+                }
             }
+            if (a.right() > 0 && b.left() < 707) //play sounds only if is inside the canvas
+                if (bSounds)
+                    Sounds[0].play();
         }
     }
 };
@@ -214,122 +246,123 @@ let Player = function (char) {
         this.y = 5 * 83;
         this.row = 5; //
         this.teleFrames = 0;
-        this.lives = 2;
+        this.lives = 5;
         this.points = 0;
     };
     this.setImage = function (image) {
         this.sprite = image;
     }
-//--------------------------------------------------------------
-this.update = function () {
-    if (this.teleFrames > 0) // started from 80 inside startTeleporting function,
-    { // and trigered after a collision with enemy
-        this.teleFrames -= 1;
-        // on the first 40 cycles of teleporting, player is in the same location
-        // and have it's transparency decreasing until he became completely invisible
-        // then the player move to the initial location and on the next 40 cicles 
-        // his opacity is increasing from 0 to 100%
-        if (this.teleFrames === 40) { // is at the middle of teleporting state?
-            this.x = 3 * 101; // player jump to the initial position
-            this.row = 5;
-            this.y = this.row * 83;
+    //--------------------------------------------------------------
+    this.update = function () {
+        if (this.teleFrames > 0) // started from 80 inside startTeleporting function,
+        { // and trigered after a collision with enemy
+            this.teleFrames -= 1;
+            // on the first 40 cycles of teleporting, player is in the same location
+            // and have it's transparency decreasing until he became completely invisible
+            // then the player move to the initial location and on the next 40 cicles 
+            // his opacity is increasing from 0 to 100%
+            if (this.teleFrames === 40) { // is at the middle of teleporting state?
+                this.x = 3 * 101; // player jump to the initial position
+                this.row = 5;
+                this.y = this.row * 83;
+            }
+        }
+    };
+
+    //--------------------------------------------------------------
+    this.render = function () {
+        if (this.teleFrames > 0) {
+            ctx.globalAlpha = Math.abs(40 - this.teleFrames) / 40;
+            //player transparency increase for first 40 teleporting changes, and decrease for next 40
+            ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
+            ctx.globalAlpha = 1;
+        } else
+            ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
+    };
+
+    //--------------------------------------------------------------
+    this.handleInput = function (key) {
+        if (this.teleFrames === 0) //lose input when is in teleporting state
+        {
+            switch (key) {
+                case (37): //left
+                    {
+                        if (this.x > 0) // hold the player inside the canvas
+                            this.x -= 101; // jump to the left column
+                        break;
+                    }
+                case (38): //up
+                    {
+                        if (this.row > 0) // hold the player under the upper edge of the canvas
+                        {
+                            this.row--;
+                            this.y = this.row * 83; // jump to the upper row
+                        }
+                        break;
+                    }
+                case (39): //right
+                    {
+                        if (this.x < 606) // hold the player inside the canvas
+                            this.x += 101; // jump to the right column
+                        break;
+                    }
+                case (40): //down
+                    {
+                        if (this.row < 5) // hold the player over the bottom edge of the canvas
+                        {
+                            this.row++; // jump to the bottom row
+                            this.y = this.row * 83; // jump to the bottom row
+                        }
+                        break;
+                    }
+                default:
+            }
         }
     }
-};
-
-//--------------------------------------------------------------
-this.render = function () {
-    if (this.teleFrames > 0) {
-        ctx.globalAlpha = Math.abs(40 - this.teleFrames) / 40;
-        //player transparency increase for first 40 teleporting changes, and decrease for next 40
-        ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
-        ctx.globalAlpha = 1;
-    } else
-        ctx.drawImage(Resources.get(this.sprite), this.x, this.y - 10);
-};
-
-//--------------------------------------------------------------
-this.handleInput = function (key) {
-    if (this.teleFrames === 0) //lose input when is in teleporting state
-    {
-        switch (key) {
-            case (37): //left
-                {
-                    if (this.x > 0) // hold the player inside the canvas
-                        this.x -= 101; // jump to the left column
-                    break;
-                }
-            case (38): //up
-                {
-                    if (this.row > 0) // hold the player under the upper edge of the canvas
-                    {
-                        this.row--;
-                        this.y = this.row * 83; // jump to the upper row
-                    }
-                    break;
-                }
-            case (39): //right
-                {
-                    if (this.x < 606) // hold the player inside the canvas
-                        this.x += 101; // jump to the right column
-                    break;
-                }
-            case (40): //down
-                {
-                    if (this.row < 5) // hold the player over the bottom edge of the canvas
-                    {
-                        this.row++; // jump to the bottom row
-                        this.y = this.row * 83; // jump to the bottom row
-                    }
-                    break;
-                }
-            default:
-        }
+    //--------------------------------------------------------------
+    this.left = function () {
+        return this.x + 17;
     }
-}
-//--------------------------------------------------------------
-this.left = function () {
-    return this.x + 17;
-}
-//--------------------------------------------------------------
-this.right = function () {
-    return this.x + 84;
-}
-//--------------------------------------------------------------
-this.top = function () {
-    return this.y + 17;
-}
-//--------------------------------------------------------------
-this.bottom = function () {
-    return this.y + 84;
-}
-//--------------------------------------------------------------
-this.startTeleporting = function (frames) {
-    this.teleFrames = frames;
-    //first half of 'frames' to get transparent on the same place
-    // next half of 'frames' to appear on the starting position
-}
-//--------------------------------------------------------------
-this.checkCollision = function (enemy) {
+    //--------------------------------------------------------------
+    this.right = function () {
+        return this.x + 84;
+    }
+    //--------------------------------------------------------------
+    this.top = function () {
+        return this.y + 17;
+    }
+    //--------------------------------------------------------------
+    this.bottom = function () {
+        return this.y + 84;
+    }
+    //--------------------------------------------------------------
+    this.startTeleporting = function (frames) {
+        this.teleFrames = frames;
+        //first half of 'frames' to get transparent on the same place
+        // next half of 'frames' to appear on the starting position
+    }
+    //--------------------------------------------------------------
+    this.checkCollision = function (enemy) {
 
-    if (enemy.row === this.row) //if they are on the same row
-    {
-        if ((enemy.nextRight() - this.left()) >= 0 && enemy.left() < this.left()) {
-            if (enemy.stayTime === 0) {
-                enemy.stop(42);
-                this.startTeleporting(80);
-                if (bSounds) {
-                    Sounds[1].currentTime = 0;
-                    Sounds[1].play();
-                    this.lives -= 1;
-                    document.getElementById("lives").innerText = this.lives + " lives left";
-                    if (this.lives === 0)
-                        gameFinished();
+        if (enemy.row === this.row) //if they are on the same row
+        {
+            if ((enemy.nextRight() - this.left()) >= 0 && enemy.left() < this.left()) {
+                if (enemy.stayTime === 0) {
+                    enemy.stop(42);
+                    this.startTeleporting(80);
+                    if (bSounds) {
+                        Sounds[1].currentTime = 0;
+                        Sounds[1].play();
+                        this.lives -= 1;
+                        let sLives = this.lives > 1 ? " lives " : " life ";
+                        document.getElementById("lives").innerText = this.lives + sLives + "left";
+                        if (this.lives === 0)
+                            gameFinished();
+                    }
                 }
             }
         }
     }
-}
 };
 
 //**********************************************************
@@ -350,8 +383,8 @@ let Items = function () {
         this.setImage();
         this.x = ((Math.floor(Math.random() * 1000)) % 7) * 101 + 25; // one of the 7 columns, 101px wide
 
-        // it is more difficult to reach this if it's on the  upper 2 of the 3 stoned rows
-        this.y = ((Math.floor(Math.random() * 1000)) % 3) * 83 + 15;
+        // chose arandom row from the 3 stoned rows
+        this.y = ((Math.floor(Math.random() * 1000)) % 3 + 1) * 83 + 15;
         //chose display time randomly
         this.displayTime = ((Math.floor(Math.random() * 1000) % 3) + 1) * 150; //frames or (1, 2, 3 or 4) * 10sec.
     };
@@ -361,8 +394,8 @@ let Items = function () {
             "images/gem-blue.png",
             "images/gem-green.png",
             "images/gem-orange.png",
-            "images/key.png",
-            "images/star.png",
+            "images/ke-key.png",
+            "images/st-star.png",
         ];
         let randomImage = ((Math.floor(Math.random() * 1000)) % 5);
         this.sprite = img[randomImage];
@@ -415,7 +448,9 @@ let Items = function () {
 
     //---------------------------------------------------------------------
     this.removeFromCanvas = function () {
-        //called when the player collect this item
+        // called when the player collect this item
+        // set displayTime to 0, meaning the player image will mo longer be drawed on canvas
+        // also set a new waiting time until it will be drawn again
         this.displayTime = 0;
         this.setWaiting();
 
@@ -487,14 +522,14 @@ let Items = function () {
     };
 }
 
-//********************************************************************************
+//********************global variables*******************************************
 
 let allEnemies = [],
     player = new Player(),
     item = new Items();
 
-
 const numberOfEnemies = 8;
+
 for (let i = 0; i < numberOfEnemies; i++) {
     // I use a different x position for every enemy to prevent
     // them starting to move overlapped
@@ -506,9 +541,9 @@ const soundFileNames = ["sounds/bug-crash.ogg",
     "sounds/magic.ogg",
     "sounds/swipe.ogg",
     "sounds/telekinesis.ogg",
+    "sounds/jet-engine.ogg"
 ];
-
-let Sounds = [];
+const Sounds = [];
 
 soundFileNames.forEach(function (file) {
     Sounds.push(new Audio(file));
@@ -516,6 +551,9 @@ soundFileNames.forEach(function (file) {
 
 let bSounds = true,
     bPaused = false;
+
+//******************************************************************************* 
+
 
 //----------------------------------------------------------------
 function gameFinished() {
@@ -536,6 +574,7 @@ function gameFinished() {
                 "Let's proceed then.",
                 "success"
             )
+            initGame();
         } else {
             swal(
                 "Wise!",
@@ -546,9 +585,39 @@ function gameFinished() {
     })
 }
 //--------------------------------------------------------------
+function initGame() {
+    //--------------------------------------------------------------
+    //called by reset function of engine when the game is starting
+    //or the player chose to play another game
+    resetHTML();
+    score = 0;
+    allEnemies.forEach(function (enemy) {
+        enemy.start();
+    });
+    player.init();
+    item.init();
+}
+//--------------------------------------------------------------
+function resetHTML() {
+    //--------------------------------------------------------------
+    // this function reset the inner text of the score panel list items to the initial values
+    // when the player chose to play another game
+    let itemValues = document.getElementsByClassName("item-value");
+    // skip first 2 list items (player name and sounds setting, they will be unchanged)
+    itemValues[2].innerText = "5 lives";
+    let i;
+    for (i = 3; i < (itemValues.length) - 1; i++)
+        itemValues[i].innerText = "0x100";
+
+    itemValues[i].innerText = "0 points";
+}
+
+//**************************************event listeners************************** 
+
+
+//--------------------------------------------------------------
 document.addEventListener( /*"keyup"*/ "keydown", function (e) {
     //----------------------------------------------------------
-    // keydown works better than keyup
     // This listens for key presses and sends the keys to your
     // Player.handleInput() method. You don"t need to modify this.
     /*
@@ -559,8 +628,10 @@ document.addEventListener( /*"keyup"*/ "keydown", function (e) {
         40: "down"
     };
 */
+    // I think keydown works better than keyup
     player.handleInput(e.keyCode);
 });
+
 //--------------------------------------------------------------
 document.getElementById("player").addEventListener("click", function (e) {
     //--------------------------------------------------------------
@@ -593,7 +664,7 @@ document.getElementById("player").addEventListener("click", function (e) {
                 strPath = "images/char-princess-girl.png";
             this.innerHTML =
                 "<img src=" + strPath + " alt='Player image'> <span class='item-value'>player</span>";
-                player.setImage(strPath);
+            player.setImage(strPath);
 
             swal({
                 title: "Choose your player name",
