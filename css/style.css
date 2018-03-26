@@ -1,7 +1,7 @@
 body {
     text-align: center;
     margin: auto;
-    width: 1130px;    
+    width: 1130px;
 }
 
 #container {
@@ -62,7 +62,7 @@ ul {
 .item-group {
     font-size: 24px;
     text-decoration: underline;
-    margin-left:30px;
+    margin-left: 30px;
 }
 
 .item-value {
@@ -76,16 +76,17 @@ img {
     padding: 3px;
     filter: drop-shadow(3px 3px 5px #000000);
 }
-.settings-item
-{
-    font-size:24px;
+
+.settings-item {
+    font-size: 24px;
     text-overflow: ellipsis;
 }
-.score-item img
-{
+
+.score-item img {
     width: 30px;
-    height: 30px; 
+    height: 30px;
 }
+
 footer {
     margin: auto;
     margin-top: 40px;

@@ -22,16 +22,20 @@ let Enemy = function (i) {
         //it will change every time is entering the canvas
         this.velocity = 0.6 + Math.random();
         this.velocityKeeper = this.velocity; // need to remember actual velocity before being stopped
-        this.id = i; // used as an identifier of this object
+        this.id = i; // used as an identifier of this object inside checkCollision function
+        // to step over checking collision with itself in the for loop
         this.kindOf = "bug";
-
-        // collision variables is used by the checkCollision function
-        this.drawCollision = 0; //number of frames a collision splash have to be draw after it was triggered
         this.stayTime = 0; //when is greater than 0, this enemy stop moving
+
+        this.chain = "free";
+        // added this chain' variable lately to manage when a collision splash must be painted
+        // it was necessary because when a snail enemy is pushing the others, we could say
+        // that there is a permanent collision state
+        // consequently, the collision splash was permanently painted and that was looking ugly
     }
     //----------------------------------------------------------
     this.setKindOf = function () {
-        // once in 16 appearances this enemy is a snail
+        // once in 24 appearances  is a snail
         let x = Math.floor((Math.random() * 1000)) % 24;
         if ((x === 0 && this.kindOf === "snail") || (x > 0 && this.kindOf === "bug"))
             return; //nothing to change
@@ -44,14 +48,23 @@ let Enemy = function (i) {
         }
     }
 
+    // bellow: three functions used to check collisions
     //--------------------------------------------------------------
     this.right = function () {
-        return this.x + 99;
+        let ret = this.x + 99;
+        if (this.kindOf === "snail")
+            ret += 45; //the snail is wider
+        return ret;
     }
 
     //--------------------------------------------------------------
     this.nextRight = function () {
-        return this.x + 99 + this.xIncrement;
+        // this is where the right side it will be on the next frame
+        // and is used to check if there is an imminent collision
+        let ret = this.x + 99 + this.xIncrement;
+        if (this.kindOf === "snail")
+            ret += 40; //the snail is wider
+        return ret;
     }
 
     //--------------------------------------------------------------
@@ -65,48 +78,53 @@ let Enemy = function (i) {
         // a row is 83px height
         // the starting point for Y coordinate is rigth bellow the water
         this.row = Math.floor((Math.random() * 1000)) % 3 + 1;
-        this.y = 85 + (this.row - 1) * 83;
+        this.y = 84 + (this.row - 1) * 83;
     }
     //--------------------------------------------------------------
     this.restartMovingFromLeft = function () {
         //--------------------------------------------------------------
         this.setKindOf();
         this.randomRow();
-        // there we've got a row for this enemy
+        // here we've got a row for this enemy
         // next, we have to set its x position
         // an enemy start to move outside the canvas, x coordinate is less than -101 pixels
-        // also it needs to avoid having 2 or more enemies overlapped
-        // so, we are looking for an empty range of 101 pixel on the track containing <this> y coordinate 
+        // also it needs to avoid put and start 2 or more enemies in the same place
+        // so, we are looking for an empty range of 101 pixel on the track containing this.y coordinate 
 
         const width = 102; // width of an enemy + 1
         let xPos = -101; // position to be found for <this> enemy
-        // xPos it will be 101 pixels left of the most left enemy.x found on this track
+        // xPos it will be at least 101 pixels left of the most left enemy.x found on this track
 
         for (let i = 0; i < allEnemies.length; i++) {
-            //check if one of these enemies is on the same track
             if (this.id === allEnemies[i].id)
                 continue; // this enemy is the one we are looking for a new position
+            //check if one of these enemies is on the same track
             else {
                 if (this.y === allEnemies[i].y) { //found an enemy on this track
                     xPos = Math.min(xPos, allEnemies[i].x - width);
                 }
             }
         }
-        this.x = xPos - 10; // -10 to have a little gap between
+        this.x = xPos - 101; // -101 to have a gap between them
 
-        // 3.36pixels/frame is the mean animation speed of an enemy
+        // 3.36pixels/frame is the chosen animation speed of an enemy
         // but we will add some random variations for every enemy
+        // for this purpose I use the velocity variable  to  multiply the previous calculated pixels/frame = 0.316*dt
         if (this.kindOf === "bug")
-            this.velocity = 0.5 + Math.random();
+            this.velocity = 0.9 * Math.random() + 0.5;
+        // this.velocity gets values from 0.5 to 1.5
         else {
-            this.velocity = 1.5;
-            if (bSounds)
-            {   Sounds[4].currentTime = 0;
-                Sounds[4].play();
+            this.velocity = 2; // snails are moving faster and always the same speed
+            if (bSounds) {
+                // this sound clip is much longer than others used on this game
+                // so I want it to be played distinct for every snail
+                // for this purpose, I am using the 'new' operator to create a sound obcject
+                const jetSound = new Audio("sounds/jet-engine.ogg")
+                jetSound.play();
             }
-            setTimeout(1000);
         }
         this.velocityKeeper = this.velocity;
+        this.chain = "free";
     }
     //-----------------------------------------
     this.stop = function (numberOfFrames) {
@@ -123,13 +141,13 @@ Enemy.prototype.update = function (dt = 16 /*default value*/ ) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
-    // --------
+    //
     // I think the proper speed of an enemy would be 303px/sec (or 3 columns/sec.)
     // or 5.05px/dt or 0.316px/milisec.
     // knowing this fraction, whenever the denominator -dt- is changing, we have to change the numerator
-    // in order to preserve the same value (speed) of animation. On this purpose, we'll use the rule of three:
+    // in order to preserve the same value (speed) of animation. On this purpose, I'll use the rule of three:
     // 0.316 = px/dt --> px = 0.316*dt; if dt increase (slow speed for whatever reason) then also px increase 
-    // px being the number of pixels an enemy is moving in a single frame animation
+    // px being the number of pixels an enemy is passing in a single frame animation
 
     if (this.stayTime > 0) {
         this.stayTime--;
@@ -141,7 +159,7 @@ Enemy.prototype.update = function (dt = 16 /*default value*/ ) {
         this.xIncrement = Math.floor(this.velocity * 0.316 * dt);
     }
     // check if this enemy is at the end of the track
-    // if yes, the set the x position at the start
+    // if yes, the set the x position out of the canvas, on the left side
     if (this.x > 909) {
         this.restartMovingFromLeft();
     }
@@ -152,42 +170,26 @@ Enemy.prototype.render = function () {
     //--------------------------------------------------------------
     // Draw the enemy on the screen, required method for game
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-    if (this.drawCollision > 0) {
-
-        ctx.drawImage(Resources.get("images/crash.png"), this.x + 80, this.y + 10);
-        this.drawCollision--; //decrease the number of frames left to be draw for collision splash
-    }
 };
 
 //--------------------------------------------------------------
 Enemy.prototype.checkCollision = function (enemy) {
     //--------------------------------------------------------------
-    //check if enemy as parameter collided with this
+    //check if parameter enemy collided with this
     //if yes, change some stuffs here
     if (this.row === enemy.row)
     //if they are on the the same track 
     //and if this enemy wasn't previously stopped behind the one in front
     {
-        //see which one is moving left
         let a = null, //it will be the enemy coming faster from behind
             b = null; // it will be enemy in front, slower
-        if (this.velocity > enemy.velocity) {
+        if (this.velocity >= enemy.velocity) {
             a = this;
             b = enemy
-        } else if (this.velocity > enemy.velocity) {
+        } else if (this.velocity < enemy.velocity) {
             a = enemy;
             b = this;
-        } else //both velocity are 0
-        {
-            if (this.left < enemy.left()) {
-                a = this;
-                b = enemy;
-            } else {
-                b = this;
-                a = enemy;
-            }
         }
-        //          return;
 
         if ((a.nextRight() - b.left(0)) >= 0 && a.left() < b.right()) {
             //here is a collision
@@ -199,24 +201,35 @@ Enemy.prototype.checkCollision = function (enemy) {
                 a.stop(22); //stop this too (if it was moving) or keep it stopped if it was stopped
             }
 
-            if (stateChanged) {
-                a.drawCollision = 5;
+            if (stateChanged) { //if enemies are moving with different speeds
+                if (a.chain === "free") {
+                    splash.setToBeDraw(a.right() - 15, a.y + 15);
+                } // draw collision splash in front of the left one
                 if (a.kindOf === "bug") //if the faster enemy is a bug
                 {
-                    // change velocity of both enemies
-                    // the one behind slow down
-                    // the one in front accelerate
-                    let tV = a.velocity;
-                    a.velocity = b.velocity;
-                    b.velocity = tV;
-                } else {
+                    // check if is free or pushed by a snail or other pushed bug
+                    if (a.chain === "pushed") {
+                        b.velocity = a.velocity; // the right bug take the same speed as the left bug
+                        b.chain = "pushed";
+
+                    } else {
+                        // change velocity of both enemies
+                        // the one behind slow down
+                        // the one in front accelerate
+                        let v = a.velocity;
+                        a.velocity = b.velocity;
+                        b.velocity = v;
+                        if (a.right() > 0 && b.left() < 707) //play sounds only if they are inside the canvas
+                            if (bSounds)
+                                Sounds[0].play();
+                    }
+                } else { // a.kindOf != "bug",  the faster enemy is a snail
                     //does not exchange velocity, but the bug is pushed forward by the snail
-                    b.velocity = a.velocity;
+                    b.velocity = a.velocity; // the bug take the same speed as the snail
+                    b.chain = "pushed";
+                    a.chain = "pushing";
                 }
             }
-            if (a.right() > 0 && b.left() < 707) //play sounds only if is inside the canvas
-                if (bSounds)
-                    Sounds[0].play();
         }
     }
 };
@@ -239,9 +252,9 @@ Enemy.prototype.start = function ()
 //**********************************************************
 let Player = function (char) {
     //*********************************************************
+    this.sprite = "images/char-boy.png";
     //--------------------------------------------------------------
     this.init = function () {
-        this.sprite = "images/char-boy.png";
         this.x = 3 * 101;
         this.y = 5 * 83;
         this.row = 5; //
@@ -351,14 +364,16 @@ let Player = function (char) {
                     enemy.stop(42);
                     this.startTeleporting(80);
                     if (bSounds) {
-                        Sounds[1].currentTime = 0;
-                        Sounds[1].play();
-                        this.lives -= 1;
-                        let sLives = this.lives > 1 ? " lives " : " life ";
-                        document.getElementById("lives").innerText = this.lives + sLives + "left";
-                        if (this.lives === 0)
-                            gameFinished();
+                        Sounds[4].play();
+                        Sounds[2].currentTime = 0;
+                        Sounds[2].play();
                     }
+                    this.lives -= 1;
+                    let sLives = this.lives > 1 ? " lives " : " life ";
+                    document.getElementById("lives").innerText = this.lives + sLives + "left";
+                    if (this.lives === 0)
+                        gameFinished();
+
                 }
             }
         }
@@ -471,7 +486,7 @@ let Items = function () {
                 this.removeFromCanvas();
                 this.updateScore()
                 if (bSounds)
-                    Sounds[3].play();
+                    Sounds[1].play();
             }
         };
     };
@@ -521,14 +536,44 @@ let Items = function () {
             listItem.innerText = player.points.toString() + " points";
     };
 }
+//**********************************************************
+let Splash = function () {
+    // this object function is to draw a crash splah in front of a bug, when is colliding with another one
+    // initially, it was designed to be executed inside the enemy render function
+    // but because Enemy.render is called inside a for loop, it happened that the splash image rendered
+    // by an enemy was overlapped if there was another enemy to be drawn in the loop
+    // so it's better to have this splash function outside and call it at the end of the for loop
+    // I should create a splash object for every enemy
+    // but it takes only 5 frames to be shown and I assume there won't be 2 splashes to be drawn at the same moment
+    // this choice is for performance reasons
 
+    this.init = function () {
+        this.x = 1000;
+        this.y = 1000;
+        this.sprite = "images/crash.png";
+        this.frameCounter = 0;
+    }
+    this.render = function () {
+        if (this.frameCounter > 0) {
+            ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+            this.frameCounter -= 1;
+        }
+    }
+    this.setToBeDraw = function (pX, pY) {
+        this.frameCounter = 5;
+        this.x = pX;
+        this.y = pY;
+    }
+}
+//********************************************************** 
 //********************global variables*******************************************
 
 let allEnemies = [],
     player = new Player(),
     item = new Items();
+splash = new Splash();
 
-const numberOfEnemies = 8;
+const numberOfEnemies = 6;
 
 for (let i = 0; i < numberOfEnemies; i++) {
     // I use a different x position for every enemy to prevent
@@ -536,12 +581,12 @@ for (let i = 0; i < numberOfEnemies; i++) {
     let enemy = new Enemy(i);
     allEnemies.push(enemy);
 }
-//create sounds objects to be played after some events
+//create sounds objects to be played after events
 const soundFileNames = ["sounds/bug-crash.ogg",
-    "sounds/magic.ogg",
-    "sounds/swipe.ogg",
-    "sounds/telekinesis.ogg",
-    "sounds/jet-engine.ogg"
+    "sounds/collect.ogg",
+    "sounds/teleport.ogg",
+    "sounds/win.ogg",
+    "sounds/ouch.ogg"
 ];
 const Sounds = [];
 
@@ -549,8 +594,7 @@ soundFileNames.forEach(function (file) {
     Sounds.push(new Audio(file));
 });
 
-let bSounds = true,
-    bPaused = false;
+let bSounds = true;
 
 //******************************************************************************* 
 
@@ -558,9 +602,13 @@ let bSounds = true,
 //----------------------------------------------------------------
 function gameFinished() {
     //--------------------------------------------------------------
+    if (bSounds)
+        Sounds[3].play();
+
+    //sweetalert2: code from https://sweetalert2.github.io/       
     swal({
         type: "success",
-        title: "Nice game",
+        title: "Good job!",
         text: "Wanna play again?",
         showConfirmButton: true,
         showCancelButton: true,
@@ -596,6 +644,7 @@ function initGame() {
     });
     player.init();
     item.init();
+    splash.init();
 }
 //--------------------------------------------------------------
 function resetHTML() {
@@ -607,7 +656,7 @@ function resetHTML() {
     itemValues[2].innerText = "5 lives";
     let i;
     for (i = 3; i < (itemValues.length) - 1; i++)
-        itemValues[i].innerText = "0x100";
+        itemValues[i].innerText = "0x" + ((i - 2) * 100).toString();
 
     itemValues[i].innerText = "0 points";
 }
@@ -635,7 +684,7 @@ document.addEventListener( /*"keyup"*/ "keydown", function (e) {
 //--------------------------------------------------------------
 document.getElementById("player").addEventListener("click", function (e) {
     //--------------------------------------------------------------
-    //sweetaler2: code from https://sweetalert2.github.io/
+    //sweetalert2: code from https://sweetalert2.github.io/
 
     swal({
         title: "Choose your player character",
