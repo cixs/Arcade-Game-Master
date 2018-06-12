@@ -1,12 +1,12 @@
 // Enemies our player must avoid
-
+ 'use strict'
 //**********************************************************
 let Enemy = function (i) {
     //**********************************************************
     // variables applied to each of our instances go here,
     // we"ve provided one for you to get started
     //--------------------------------------------------------------
-    this.start = function () {
+    this.init = function () {
         // The image/sprite for our enemies, this uses
         // a helper we"ve provided to easily load images
         this.sprite = "images/enemy-bug.png";
@@ -18,7 +18,6 @@ let Enemy = function (i) {
         this.xIncrement = 0;
 
         // velocity is a multiplier of dt
-        // I want enemies to get randomly one of 5 different speeds
         //it will change every time is entering the canvas
         this.velocity = 0.6 + Math.random();
         this.velocityKeeper = this.velocity; // need to remember actual velocity before being stopped
@@ -27,7 +26,6 @@ let Enemy = function (i) {
         this.kindOf = "bug";
         this.stayTime = 0; //when is greater than 0, this enemy stop moving
 
-        this.chain = "free";
         // added this chain' variable lately to manage when a collision splash must be painted
         // it was necessary because when a snail enemy is pushing the others, we could say
         // that there is a permanent collision state
@@ -41,10 +39,12 @@ let Enemy = function (i) {
             return; //nothing to change
         else {
             x === 0 ? this.kindOf = "snail" : this.kindOf = "bug";
-            if (this.kindOf === "snail")
+            if (this.kindOf === "snail") {
                 this.sprite = "images/enemy-snail.png";
-            else
+                this.chain = "pushing";
+            } else
                 this.sprite = "images/enemy-bug.png";
+            this.chain = "free";
         }
     }
 
@@ -76,10 +76,11 @@ let Enemy = function (i) {
     this.randomRow = function () {
         // there are 3 rows for enemies, randomly choose one
         // a row is 83px height
-        // the starting point for Y coordinate is rigth bellow the water
+        // the starting point for Y coordinate is right bellow the water
         this.row = Math.floor((Math.random() * 1000)) % 3 + 1;
         this.y = 84 + (this.row - 1) * 83;
     }
+
     //--------------------------------------------------------------
     this.restartMovingFromLeft = function () {
         //--------------------------------------------------------------
@@ -160,7 +161,7 @@ Enemy.prototype.update = function (dt = 16 /*default value*/ ) {
     }
     // check if this enemy is at the end of the track
     // if yes, the set the x position out of the canvas, on the left side
-    if (this.x > 909) {
+    if (this.x > 707) {
         this.restartMovingFromLeft();
     }
 };
@@ -198,7 +199,7 @@ Enemy.prototype.checkCollision = function (enemy) {
             if (b.stayTime > 0) { //the enemy beyond was stoped
                 if (a.stayTime > 0) // both enemy are stopped, nothing to change
                     stateChanged = false;
-                a.stop(22); //stop this too (if it was moving) or keep it stopped if it was stopped
+                a.stop(b.stayTime); //stop this too (if it was moving) or keep it stopped if it was stopped
             }
 
             if (stateChanged) { //if enemies are moving with different speeds
@@ -233,13 +234,6 @@ Enemy.prototype.checkCollision = function (enemy) {
         }
     }
 };
-//--------------------------------------------------------------
-Enemy.prototype.start = function ()
-//--------------------------------------------------------------
-{
-    // horizontal position (x axe)
-    this.init();
-}
 
 // Now write your own player class
 // This class requires an update(), render() and
@@ -570,10 +564,10 @@ let Splash = function () {
 
 let allEnemies = [],
     player = new Player(),
-    item = new Items();
+    item = new Items(),
 splash = new Splash();
 
-const numberOfEnemies = 6;
+const numberOfEnemies = 8;
 
 for (let i = 0; i < numberOfEnemies; i++) {
     // I use a different x position for every enemy to prevent
@@ -638,9 +632,8 @@ function initGame() {
     //called by reset function of engine when the game is starting
     //or the player chose to play another game
     resetHTML();
-    score = 0;
     allEnemies.forEach(function (enemy) {
-        enemy.start();
+        enemy.init();
     });
     player.init();
     item.init();
